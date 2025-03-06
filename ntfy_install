@@ -1,0 +1,8 @@
+#!/bin/bash
+
+build ()
+{
+  add_file "/etc/ssl/certs/ca-certificates.crt"
+  add_file "/etc/ntfy/mkinitcpio-ntfy.conf"
+  add_runscript
+}

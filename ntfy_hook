@@ -1,0 +1,24 @@
+#!/usr/bin/ash
+
+hit_ntfy ()
+{
+  # wait for network connectivity
+  while ! ping -c 1 -w 1 one.one.one.one &> /dev/null
+  do
+      sleep 1
+  done
+  # source configuration
+  . /etc/ntfy/mkinitcpio-ntfy.conf
+  # allow X seconds for passphrase entry before notifying
+  sleep ${NTFY_DELAY}
+  # send message
+  curl -s \
+    -H "Authorization: Bearer ${NTFY_AUTH_TOKEN}" \
+    -d "${NTFY_MESSAGE}" \
+    ${NTFY_SERVER_URL} >/dev/null
+}
+
+run_hook ()
+{
+  ( hit_ntfy & )
+}
