@@ -2,15 +2,34 @@
 
 hit_ntfy ()
 {
-  # wait for network connectivity
-  while ! ping -c 1 -w 1 one.one.one.one &> /dev/null
-  do
-      sleep 1
-  done
   # source configuration
   . /etc/ntfy/mkinitcpio-ntfy.conf
   # allow X seconds for passphrase entry before notifying
   sleep ${NTFY_DELAY}
+  # wait for network connectivity
+  while ! ping -c 1 -w 1 one.one.one.one &> /dev/null
+  do
+    # if networking is set up via the net module of mkinitcpio-nfs-utils, the dns won't be working due to missing resolv.conf
+    # first check if resolv.conf exists
+    if [ ! -f /etc/resolv.conf ]; then
+      # if not, check if ipconfig got the dns from dhcp
+      for ethconf in $(find /tmp -name net-*.conf); do
+        . ${ethconf}
+        if [ "${IPV4DNS0}" != "0.0.0.0" ]; then
+          echo "nameserver ${IPV4DNS0}" > /etc/resolv.conf
+          break
+        elif [ "${IPV4DNS1}" != "0.0.0.0" ]; then
+          echo "nameserver ${IPV4DNS1}" > /etc/resolv.conf
+          break
+        fi
+      done
+      # if not, set the nameserver to Cloudflare
+      if [ ! -f /etc/resolv.conf ]; then
+        echo "nameserver 1.1.1.1" > /etc/resolv.conf
+      fi
+    fi
+    sleep 1
+  done
   # send message
   curl -s \
     -H "Authorization: Bearer ${NTFY_AUTH_TOKEN}" \
